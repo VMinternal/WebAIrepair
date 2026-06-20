@@ -1,11 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { IssuesService } from './issues.service';
 import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
+import { AiModule } from '../ai/ai.module';
+import { AiService } from '../ai/ai.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Issue } from './entities/issue.entity';
+import { Repository } from 'typeorm';
 
 @Controller('issues')
 export class IssuesController {
-  constructor(private readonly issuesService: IssuesService) {}
+  constructor(
+    private readonly issuesService: IssuesService) {}
 
   @Post()
   create(@Body() createIssueDto: CreateIssueDto) {
@@ -15,6 +21,11 @@ export class IssuesController {
   @Get()
   findAll() {
     return this.issuesService.findAll();
+  }
+
+    @Get('search-ai')
+  async searchAi(@Query('query') query: string) {
+    return this.issuesService.searchAi(query);
   }
 
   @Get(':id')

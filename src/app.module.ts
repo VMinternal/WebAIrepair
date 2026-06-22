@@ -7,6 +7,19 @@ import { PartsModule } from './modules/parts/parts.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SymptomsModule } from './modules/symptoms/symptoms.module';
 import { IssuesModule } from './modules/issues/issues.module';
+import { UsersModule } from './modules/users/users.module';
+import { PostsModule } from './modules/posts/posts.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { Issue } from './modules/issues/entities/issue.entity';
+import { Device } from './modules/devices/entities/device.entity';
+import { Part } from './modules/parts/part.entity';
+import { Symptom } from './modules/symptoms/entities/symptom.entity';
+import { User } from './modules/users/entities/user.entity';
+import { Appointment } from './modules/appointments/entities/appointment.entity';
+import { Post } from './modules/posts/entities/post.entity';
+import { Tag } from './modules/posts/entities/tag.entity';
+import { Vector } from './modules/symptoms/entities/vector.entity';
+
 
 
 @Module({
@@ -28,7 +41,7 @@ import { IssuesModule } from './modules/issues/issues.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         // Automatically scan and load all files with the .entity.ts extension in the project.
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        entities: [Issue, Device, Part, Symptom, User, Appointment, Post, Tag, Vector],
         // synchronize: true automatically creates tables in the database based on the Entity file.
         synchronize: true, 
       }),
@@ -41,6 +54,12 @@ import { IssuesModule } from './modules/issues/issues.module';
     SymptomsModule,
 
     IssuesModule,
+
+    UsersModule,
+
+    AppointmentsModule,
+
+    PostsModule,
 
   ],
   controllers: [AppController],

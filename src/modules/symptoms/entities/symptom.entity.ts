@@ -1,5 +1,6 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Issue } from 'src/modules/issues/entities/issue.entity';
+import { Vector } from './vector.entity';
 
 @Entity('symptoms')
 export class Symptom {
@@ -14,5 +15,8 @@ export class Symptom {
 
   @ManyToOne(() => Issue, (issue) => issue.symptoms, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'issue_id' }) 
-  issue!: Issue;
+  issue: Issue;
+
+  @OneToMany(() => Vector, (vector) => vector.symptom)
+  vectors: Vector[];
 }

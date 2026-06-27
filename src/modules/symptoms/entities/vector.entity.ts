@@ -10,7 +10,7 @@ export class Vector {
   symptom_id: string;
 
   
-  @Column({ type: 'double precision', array: true, nullable: true })
+  @Column({ type: 'vector', length: 768, nullable: true })
   embedding: number[];
 
 

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { SymptomsService } from './symptoms.service';
 import { CreateSymptomDto } from './dto/create-symptom.dto';
 import { UpdateSymptomDto } from './dto/update-symptom.dto';
+import { SearchSymptomDto } from './dto/search-symptom.dto';
 
 @Controller('symptoms')
 export class SymptomsController {
@@ -10,6 +11,12 @@ export class SymptomsController {
   @Post('advanced')
   createAdvanced(@Body() createSymptomDto: CreateSymptomDto) {
     return this.symptomsService.createAdvancedSymptom(createSymptomDto);
+  }
+
+  @Post('search')
+  @HttpCode(HttpStatus.OK) // ✨ Tìm kiếm thì trả về 200 OK thay vì 201 Created
+  async searchSimilarSymptoms(@Body() dto: SearchSymptomDto) {
+    return this.symptomsService.searchSimilar(dto);
   }
 
   @Get()

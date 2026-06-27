@@ -7,9 +7,9 @@ import { UpdateSymptomDto } from './dto/update-symptom.dto';
 export class SymptomsController {
   constructor(private readonly symptomsService: SymptomsService) {}
 
-  @Post()
-  create(@Body() createSymptomDto: CreateSymptomDto) {
-    return this.symptomsService.create(createSymptomDto);
+  @Post('advanced')
+  createAdvanced(@Body() createSymptomDto: CreateSymptomDto) {
+    return this.symptomsService.createAdvancedSymptom(createSymptomDto);
   }
 
   @Get()

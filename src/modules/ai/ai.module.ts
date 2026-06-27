@@ -3,6 +3,6 @@ import { AiService } from './ai.service';
 
 @Module({
   providers: [AiService],
-  exports: [AiService], // Dòng này cực kỳ quan trọng để các module khác kế thừa được
+  exports: [AiService], // This line allows other modules to inherit from it.
 })
 export class AiModule {}

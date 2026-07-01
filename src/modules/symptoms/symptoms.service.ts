@@ -137,11 +137,35 @@ async createAdvancedSymptom(dto: CreateSymptomDto) {
   //  Scan the database with threshold filters.
   let dbResults: any[];
   const SIMILARITY_THRESHOLD = 0.86; 
+  // Initialize dynamic parameter arrays
+  const queryParams: any[] = [vectorString, SIMILARITY_THRESHOLD];
+  // Initialize additional conditional statement strings
+  let deviceJoinClause = '';
+  let filterConditions = '';
 
+  if (dto.deviceId) {
+    // Kết nối thêm với bảng devices d (Do bảng issues liên kết trực tiếp với devices)
+    deviceJoinClause = `INNER JOIN devices d ON i.device_id = d.id`;
+    
+    // Đẩy deviceId vào mảng tham số, vị trí của nó sẽ tương ứng với ký hiệu $3, $4... động
+    queryParams.push(dto.deviceId);
+    filterConditions += ` AND d.id = $${queryParams.length}`;
+  }
+
+  // 4. ✨ NẾU CLIENT TRUYỀN LÊN THỜI GIAN BẢO HÀNH -> TỰ ĐỘNG LỌC ĐỘNG
+  if (dto.warrantyPeriod) {
+    // Nếu chưa join với bảng devices ở trên thì tự động join vào
+    if (!deviceJoinClause) {
+      deviceJoinClause = `INNER JOIN devices d ON i.device_id = d.id`;
+    }
+    // Sử dụng ILIKE động thay vì viết chết các chuỗi 6 tháng hay 12 tháng
+    queryParams.push(`%${dto.warrantyPeriod}%`);
+    filterConditions += ` AND d.warranty_period ILIKE $${queryParams.length}`;
+  }
   try {
     // The calculation 1 - (distance) will convert to a similarity score of % (the closer to 1, the more identical).
     dbResults = await this.dataSource.query(
-        `
+    `
       SELECT 
         s.id AS "symptomId", 
         s.content AS "symptomContent", 
@@ -150,12 +174,14 @@ async createAdvancedSymptom(dto: CreateSymptomDto) {
       FROM vectors v
       INNER JOIN symptoms s ON v.symptom_id = s.id
       INNER JOIN issues i ON s.issue_id = i.id
-      WHERE 1 - (v.embedding <=> $1::vector) >= $2            
+      ${deviceJoinClause} 
+      WHERE 1 - (v.embedding <=> $1::vector) >= $2      
+      ${filterConditions} 
       ORDER BY v.embedding <=> $1::vector ASC
       LIMIT 5
-      `,
-      [vectorString, SIMILARITY_THRESHOLD]
+    `, queryParams
     );
+    return dbResults;
   } catch (dbError) {
     console.error('❌ Database Raw Query Failure:', dbError);
     if (dbError instanceof Error && dbError.message.includes('vector symbols must have the same length')) {

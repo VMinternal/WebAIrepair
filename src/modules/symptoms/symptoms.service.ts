@@ -150,19 +150,7 @@ async createAdvancedSymptom(dto: CreateSymptomDto) {
     // Đẩy deviceId vào mảng tham số, vị trí của nó sẽ tương ứng với ký hiệu $3, $4... động
     queryParams.push(dto.deviceId);
     filterConditions += ` AND d.id = $${queryParams.length}`;
-  }
-
-  // 4. ✨ NẾU CLIENT TRUYỀN LÊN THỜI GIAN BẢO HÀNH -> TỰ ĐỘNG LỌC ĐỘNG
-  if (dto.warrantyPeriod) {
-    // Nếu chưa join với bảng devices ở trên thì tự động join vào
-    if (!deviceJoinClause) {
-      deviceJoinClause = `INNER JOIN devices d ON i.device_id = d.id`;
-    }
-    // Sử dụng ILIKE động thay vì viết chết các chuỗi 6 tháng hay 12 tháng
-    queryParams.push(`%${dto.warrantyPeriod}%`);
-    filterConditions += ` AND d.warranty_period ILIKE $${queryParams.length}`;
-  }
-  try {
+  }try {
     // The calculation 1 - (distance) will convert to a similarity score of % (the closer to 1, the more identical).
     dbResults = await this.dataSource.query(
     `
@@ -181,7 +169,53 @@ async createAdvancedSymptom(dto: CreateSymptomDto) {
       LIMIT 5
     `, queryParams
     );
-    return dbResults;
+    if (dbResults && dbResults.length > 0) {
+      // Separate all issue IDs to prepare for a one-time event scan.
+      const issueIds = dbResults.map(item => item.issueId);
+
+      // Run the SQL statement to extract all components belonging to these issueIds.
+      const partsData = await this.dataSource.query(`
+        SELECT 
+          ip.issue_id AS "issueId",
+          p.id AS "partId",
+          p.name AS "partName",
+          p.price AS "price",
+          p.warranty_period AS "warrantyPeriod"
+        FROM issue_parts ip
+        INNER JOIN parts p ON ip.part_id = p.id
+        INNER JOIN part_devices pd ON p.id = pd.part_id
+        WHERE ip.issue_id = ANY($1)
+        ${dto.deviceId ? 'AND pd.device_id = $2' : ''}
+      `, dto.deviceId ? [issueIds, dto.deviceId] : [issueIds]);
+
+      // Map the list of components to each problem and calculate the total cost.
+      dbResults.forEach(issue => {
+        // Filter out the components that belong to the current issue.
+        const associatedParts = partsData.filter(part => part.issueId === issue.issueId);
+        
+        // Attach the detailed parts array to the issue object.
+        issue.parts = associatedParts.map(p => ({
+          id: p.partId,
+          name: p.partName,
+          price: p.price,
+          warrantyPeriod: p.warrantyPeriod
+        }));
+
+        // Calculate the total estimated cost for this repair.
+        issue.totalEstimatedPrice = associatedParts.reduce((sum, p) => sum + (p.price || 0), 0);
+        if (issue.parts.length === 0) {
+          issue.partStatusNote = 'Parts for this model are not yet available. Please contact us or visit our store for detailed information.';
+        } else {
+          issue.partStatusNote = 'Parts are available in store.';
+        }
+      });
+    }
+
+    // Return the final result containing the full AI + Components + Price
+    return {
+      message: 'Successfully retrieved matching symptoms with associated parts and cost estimation.',
+      data: dbResults
+    };
   } catch (dbError) {
     console.error('❌ Database Raw Query Failure:', dbError);
     if (dbError instanceof Error && dbError.message.includes('vector symbols must have the same length')) {

@@ -5,20 +5,20 @@ export class AiService implements OnModuleInit {
   private pipeline: any;
 
   async onModuleInit() {
-    console.log('⏳ Đang khởi tải mô hình AI Local (multilingual-e5-base)...');
+    console.log('⏳ Loading the AI ​​Local model (multilingual-e5-base)...');
     
-    // Import động để né xung đột giữa ESM và CommonJS của NestJS
+    // Dynamic import to avoid conflicts between NestJS's ESM and CommonJS.
     const { pipeline } = await import('@xenova/transformers');
     
-    // Tải mô hình từ Hugging Face về máy chạy hoàn toàn Local
+    // Download the model from Hugging Face to your computer and run it completely locally.
     this.pipeline = await pipeline('feature-extraction', 'Xenova/multilingual-e5-base');
     
-    console.log('✅ Mô hình AI đã tải xong và sẵn sàng chạy hoàn toàn Local!');
+    console.log('✅ The AI ​​model has finished loading and is ready to run completely locally!');
   }
 
-  // Hàm dịch chữ thành mảng số Vector (768 chiều)
+  // Function to convert text into a vector array of numbers (768 dimensions)
   async generateEmbedding(text: string, isQuery: boolean = false): Promise<number[]> {
-    // Thêm tiền tố query: hoặc passage: chuẩn mô hình E5
+    // Add the prefix query: or passage: in the E5 model.
     const prefix = isQuery ? 'query: ' : 'passage: ';
     const formattedText = `${prefix}${text}`;
 

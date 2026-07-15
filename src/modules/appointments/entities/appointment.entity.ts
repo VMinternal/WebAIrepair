@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Device } from 'src/modules/devices/entities/device.entity';
 import { User } from 'src/modules/users/entities/user.entity';
+import { Issue } from 'src/modules/issues/entities/issue.entity';
 
 @Entity('appointments')
 export class Appointment {
@@ -16,8 +17,14 @@ export class Appointment {
   @Column({ name: 'device_id', type: 'uuid', nullable: true })
   deviceId: string;
 
+  @Column({ name: 'issue_id', type: 'uuid', nullable: true })
+  issueId: string;
+
   @Column({ name: 'issue_description', type: 'text', nullable: true })
   issueDescription: string;
+
+  @Column({ name: 'total_price', type: 'integer', default: 0 })
+  totalPrice: number;
 
   @Column({ name: 'appointment_date', type: 'timestamp without time zone', nullable: true })
   appointmentDate: Date;
@@ -38,4 +45,8 @@ export class Appointment {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'technician_id' })
   technician: User;
+
+  @ManyToOne(() => Issue)
+  @JoinColumn({ name: 'issue_id' })
+  issue: Issue;
 }

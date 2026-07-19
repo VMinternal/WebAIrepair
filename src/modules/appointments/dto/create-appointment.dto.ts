@@ -9,6 +9,10 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   phone: string;
 
+  @IsString()
+  @IsOptional()
+  deviceModel: string;
+
   @IsUUID()
   @IsOptional()
   deviceId?: string;

@@ -38,7 +38,7 @@ export class Appointment {
   @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
   createdAt: Date;
 
-  @ManyToOne(() => Device)
+  @ManyToOne(() => Device, (device) => device.appointments)
   @JoinColumn({ name: 'device_id' })
   device: Device;
 

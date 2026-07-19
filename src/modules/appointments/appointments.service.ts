@@ -3,7 +3,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Appointment } from './entities/appointment.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { DataSource } from 'typeorm';
 import { Device } from '../devices/entities/device.entity';
@@ -14,31 +14,70 @@ export class AppointmentsService {
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
+
+    @InjectRepository(Device)
+    private readonly deviceRepository: Repository<Device>,
+
     private dataSource: DataSource,
   ) {}
   
- async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
-    const newAppointment = this.appointmentRepository.create({
-      customerName: createAppointmentDto.customerName,
-      phone: createAppointmentDto.phone,
-      
-      deviceId: createAppointmentDto.deviceId,
-      issueId: createAppointmentDto.issueId,
-      issueDescription: createAppointmentDto.issueDescription,
-      totalPrice: createAppointmentDto.totalPrice || 0,
-      appointmentDate: createAppointmentDto.appointmentDate ? new Date(createAppointmentDto.appointmentDate) : undefined,
-      status: 'pending', // Newly created orders are always set to pending approval by default.
-    });
+  async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
+    console.log('=== DỮ LIỆU DTO NHẬN ĐƯỢC ===', createAppointmentDto);
+  // 1. Lấy tên model thiết bị từ Frontend gửi lên (ví dụ: "iphone 14 pro max")
+  const modelName = createAppointmentDto.deviceModel;
+  let foundDevice: Device | null = null;
+
+  if (modelName) {
     try {
-      return await this.appointmentRepository.save(newAppointment);
-    } catch (error) {
-      console.error('Error creating a detailed appointment:', error);
-      if ((error as any).code === '23503') {
-        throw new BadRequestException('The device or AI error code transmitted does not exist in the system.');
-      }
-        throw new BadRequestException('The system is busy and cannot process booking orders at this time. Please try again later.');
+      // Tìm thiết bị trong DB có model trùng khớp (Không phân biệt hoa thường)
+      foundDevice = await this.deviceRepository.findOne({
+        where: { model: ILike(`%${modelName.trim()}%`) } 
+      });
+      console.log('=== KẾT QUẢ TÌM THIẾT BỊ TRONG DB ===', foundDevice);
+      // Đặt một dòng log ở đây để kiểm tra xem có tìm thấy máy trong DB thật không
+      console.log('--> Kết quả tìm kiếm thiết bị:', foundDevice);
+      
+    } catch (dbError) {
+      console.error('Không tìm thấy thiết bị phù hợp dưới DB:', dbError);
+      
     }
+  }else {
+    // 🔴 3. LOG NẾU BIẾN TÊN MÁY BỊ TRỐNG
+    console.log('⚠️ CẢNH BÁO: deviceModel gửi lên bị rỗng hoặc undefined!');
   }
+  // 2. Đóng gói dữ liệu chuẩn theo thuộc tính Entity của bạn
+  const newAppointment = this.appointmentRepository.create({
+    customerName: createAppointmentDto.customerName,
+    phone: createAppointmentDto.phone,
+    
+    // ✨ THAY ĐỔI QUAN TRỌNG Ở ĐÂY:
+    // Gán trực tiếp thực thể 'foundDevice' vào thuộc tính 'device' (quan hệ ManyToOne)
+    // Nếu không tìm thấy bằng tên modelName, thử fallback về đối tượng chứa deviceId từ DTO
+    device: foundDevice ? foundDevice : (createAppointmentDto.deviceId ? { id: createAppointmentDto.deviceId } : undefined), 
+    
+    issueId: createAppointmentDto.issueId,
+    issueDescription: createAppointmentDto.issueDescription,
+    totalPrice: createAppointmentDto.totalPrice || 0,
+    
+    // Nếu Frontend không gửi ngày lên, tự động lấy ngày giờ hiện tại của hệ thống
+    appointmentDate: createAppointmentDto.appointmentDate 
+      ? new Date(createAppointmentDto.appointmentDate) 
+      : new Date(),
+      
+    status: 'pending', 
+  });
+
+  // 3. Tiến hành lưu xuống Database với try-catch phòng thủ chặt chẽ
+  try {
+    return await this.appointmentRepository.save(newAppointment);
+  } catch (error) {
+    console.error('Error creating a detailed appointment:', error);
+    if ((error as any).code === '23503') {
+      throw new BadRequestException('Mã thiết bị hoặc mã lỗi AI gửi lên không tồn tại trong hệ thống.');
+    }
+    throw new BadRequestException('Hệ thống bận, không thể xử lý đặt lịch lúc này. Vui lòng thử lại sau.');
+  }
+}
 
   async findAll(): Promise<Appointment[]> {
       return await this.appointmentRepository.find({
@@ -46,6 +85,21 @@ export class AppointmentsService {
         order: { createdAt: 'DESC' }, 
       });
     }
+
+  async findByPhone(phone: string): Promise<Appointment[]> {
+  const appointments = await this.appointmentRepository.find({
+    where: { phone: phone },
+    relations: ['device'],
+    order: {
+      createdAt: 'DESC', 
+    },
+  });
+  if (!appointments || appointments.length === 0) {
+    throw new NotFoundException(`Không tìm thấy lịch hẹn nào cho số điện thoại: ${phone}`);
+  }
+
+  return appointments;
+}
 
     async findOne(id: string): Promise<Appointment> {
      if (!isUUID(id)) {
@@ -88,10 +142,18 @@ export class AppointmentsService {
 }
 
   async remove(id: string): Promise<{ message: string }> {
-    // Check if that appointment exists so you can delete it; otherwise, it will automatically throw a 404 error.
-    const appointment = await this.findOne(id);
-    
-    await this.appointmentRepository.remove(appointment);
-    return { message: `Appointment with ID code successfully deleted: ${id}` };
+  const appointment = await this.findOne(id);
+  if (appointment.status === 'completed') {
+    throw new BadRequestException(
+      `Completed appointments cannot be deleted. (ID: ${id}). This data must be retained for financial reconciliation purposes.`
+    );
   }
+  if (appointment.status === 'accepted' || appointment.status === 'in_progress') {
+    throw new BadRequestException(
+      `The appointment is being processed by a technician. It cannot be canceled at this time.`
+    );
+  }
+  await this.appointmentRepository.remove(appointment);
+  return { message: `Appointment with ID code ${id} It has been successfully deleted from the system.` };
+}
 }

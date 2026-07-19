@@ -1,6 +1,7 @@
 import { Column, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Part } from "src/modules/parts/part.entity";
 import { Issue } from 'src/modules/issues/entities/issue.entity';
+import { Appointment } from "src/modules/appointments/entities/appointment.entity";
 
 @Entity('devices')
 export class Device {
@@ -18,4 +19,7 @@ export class Device {
 
     @OneToMany(() => Issue, (issue) => issue.device)
     issues: Issue[];
+
+    @OneToMany(() => Appointment, (appointment) => appointment.device)
+  appointments: Appointment[];
 }

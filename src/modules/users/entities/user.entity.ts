@@ -13,7 +13,7 @@ export class User {
     @Column({ type: 'varchar', length: 150, unique: true })
   email: string;
 
-  @Column({ name: 'password_hash', type: 'text' })
+  @Column({ name: 'password_hash', type: 'text', select: false })
   passwordHash: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.TECHNICIAN })

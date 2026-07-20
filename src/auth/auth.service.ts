@@ -13,6 +13,9 @@ export class AuthService {
   // Account authentication function from the actual database.
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email); 
+    console.log('--- KHÁM BỆNH USER ---');
+    console.log(bcrypt.hashSync('123456', 10));
+    console.log('----------------------');
     if (!user) {
       throw new UnauthorizedException('Tài khoản hoặc mật khẩu không chính xác!');
     }

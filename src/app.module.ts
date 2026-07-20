@@ -19,6 +19,7 @@ import { Appointment } from './modules/appointments/entities/appointment.entity'
 import { Post } from './modules/posts/entities/post.entity';
 import { Tag } from './modules/posts/entities/tag.entity';
 import { Vector } from './modules/symptoms/entities/vector.entity';
+import { AuthModule } from './auth/auth.module';
 
 
 
@@ -31,7 +32,7 @@ import { Vector } from './modules/symptoms/entities/vector.entity';
     
     // 2. Kết nối tới PostgreSQL sử dụng các biến từ file .env
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule, AuthModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',

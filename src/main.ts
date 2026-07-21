@@ -15,6 +15,6 @@ async function bootstrap() {
     credentials: true, // Allow sending cookies/tokens if you plan to use them for authentication later.
   });
 
-  await app.listen(8000); // Hoặc cổng hiện tại của bạn (ví dụ 8000)
+  await app.listen(8000); 
 }
 bootstrap();

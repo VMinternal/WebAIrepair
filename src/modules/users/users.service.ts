@@ -17,13 +17,13 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<Omit<User, 'passwordHash'>> {
     const { password, email, name } = createUserDto;
 
-    // 1. Mã hóa mật khẩu với Salt Round = 10 (Chuẩn an toàn mã hóa)
+    // Encrypt your password using Salt Round = 10 (a secure encryption standard).
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 2. Tạo đối tượng user mới với mật khẩu đã được bảo mật
+    // Create a new user object with a secured password.
     const newUser = this.userRepository.create({
-      email: email.toLowerCase().trim(), // Chuẩn hóa email về chữ thường
+      email: email.toLowerCase().trim(), // Standardize emails to lowercase.
       passwordHash: hashedPassword,
       fullname: name || (createUserDto as any).fullname,
     });
@@ -31,15 +31,15 @@ export class UsersService {
     try {
       const savedUser = await this.userRepository.save(newUser);
       
-      // 3. Giấu mật khẩu trước khi trả về Frontend để đảm bảo an toàn
+      // Hide the password before returning it to the frontend to ensure security.
       const { passwordHash: _, ...result } = savedUser;
       return result;
     } catch (error) {
-      // Mã lỗi '23505' là lỗi Unique Violation (Trùng cột unique như Email) trong Postgres
+      // Error code '23505' indicates a Unique Violation error (duplicate column, such as Email) in PostgreSQL.
       if ((error as any).code === '23505') {
-        throw new ConflictException(`Email "${email}" đã tồn tại trên hệ thống!`);
+        throw new ConflictException(`Email "${email}" It already exists on the system!`);
       }
-      throw new InternalServerErrorException('Lỗi hệ thống, không thể tạo tài khoản lúc này.');
+      throw new InternalServerErrorException('System error, unable to create an account at this time.');
     }
   }
 
@@ -55,7 +55,7 @@ export class UsersService {
       select: ['id', 'email', 'fullname', 'role', 'createdAt'], 
     });
     if (!user) {
-      throw new NotFoundException(`Không tìm thấy thành viên có ID: ${id}`);
+      throw new NotFoundException(`No member with ID found: ${id}`);
     }
     return user;
   }
@@ -69,7 +69,7 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<Omit<User, 'passwordHash'>> {
     const user = await this.userRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException('Không tìm thấy thành viên để cập nhật.');
+    if (!user) throw new NotFoundException('No members were found to update.');
 
     const { password, ...rest } = updateUserDto;
     Object.assign(user, rest);
@@ -85,9 +85,9 @@ export class UsersService {
 
   async remove(id: string): Promise<{ message: string }> {
     const user = await this.userRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException('Không tìm thấy thành viên để xóa.');
+    if (!user) throw new NotFoundException('No member found to delete.');
     
     await this.userRepository.remove(user);
-    return { message: 'Xóa thành viên thành công.' };
+    return { message: 'Member removal successful.' };
   }
 }

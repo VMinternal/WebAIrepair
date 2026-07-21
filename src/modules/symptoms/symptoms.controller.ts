@@ -14,7 +14,7 @@ export class SymptomsController {
   }
 
   @Post('search')
-  @HttpCode(HttpStatus.OK) // ✨ Tìm kiếm thì trả về 200 OK thay vì 201 Created
+  @HttpCode(HttpStatus.OK) // The search returns 200 OK instead of 201 Created
   async searchSimilarSymptoms(@Body() dto: SearchSymptomDto) {
     return this.symptomsService.searchSimilar(dto);
   }

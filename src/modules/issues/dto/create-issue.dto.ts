@@ -3,5 +3,5 @@ export class CreateIssueDto {
   description?: string;
   causes?: string;
   solutions?: string;
-  device_id: string; // Cột này để định danh lỗi thuộc thiết bị nào nè
+  device_id: string; 
 }

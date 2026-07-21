@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { APP_GUARD } from '@nestjs/core';
 import { PartsModule } from './modules/parts/parts.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SymptomsModule } from './modules/symptoms/symptoms.module';
@@ -20,17 +21,23 @@ import { Post } from './modules/posts/entities/post.entity';
 import { Tag } from './modules/posts/entities/tag.entity';
 import { Vector } from './modules/symptoms/entities/vector.entity';
 import { AuthModule } from './auth/auth.module';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 
 
 @Module({
   imports: [
-    // 1. Kích hoạt ConfigModule để đọc file .env toàn cục
+    //Activate ConfigModule to read global .env files.
     ConfigModule.forRoot({
       isGlobal: true, 
     }),
+
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 10,
+    }]),
     
-    // 2. Kết nối tới PostgreSQL sử dụng các biến từ file .env
+    // Connect to PostgreSQL using variables from the .env file.
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule, AuthModule],
       inject: [ConfigService],
@@ -63,7 +70,15 @@ import { AuthModule } from './auth/auth.module';
     PostsModule,
 
   ],
+
+  
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

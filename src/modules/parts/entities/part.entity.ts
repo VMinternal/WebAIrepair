@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
-import { Device } from '../devices/entities/device.entity';
-import { Issue } from '../issues/entities/issue.entity';
+import { Device } from 'src/modules/devices/entities/device.entity';
+import { Issue } from 'src/modules/issues/entities/issue.entity';
 @Entity('parts')
 export class Part {
 

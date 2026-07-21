@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/modules/users/users.service'; 
 import * as bcrypt from 'bcrypt';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -13,17 +14,14 @@ export class AuthService {
   // Account authentication function from the actual database.
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email); 
-    console.log('--- KHÁM BỆNH USER ---');
-    console.log(bcrypt.hashSync('123456', 10));
-    console.log('----------------------');
     if (!user) {
-      throw new UnauthorizedException('Tài khoản hoặc mật khẩu không chính xác!');
+      throw new UnauthorizedException('Incorrect username or password!');
     }
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException('Tài khoản hoặc mật khẩu không chính xác!');
+      throw new UnauthorizedException('Incorrect username or password!');
     }
-    // 4. Xác thực thành công, bóc tách mật khẩu ra để bảo mật thông tin trước khi tạo Token
+    // Verification successful, password extraction to secure information before token creation.
     const { passwordHash, ...result } = user;
     return result;
   }
@@ -32,11 +30,24 @@ export class AuthService {
     const payload = { 
       email: user.email, 
       sub: user.id, 
-      role: user.role // Role lấy trực tiếp từ cột 'role' trong bảng User ở DB
+      role: user.role // Role is retrieved directly from the 'role' column in the User table in the database.
     };
-    
     return {
       accessToken: this.jwtService.sign(payload),
+      role: user.role
+    };
+  }
+
+  async register(registerDto: RegisterDto) {
+    const newUser = await this.usersService.create({
+      name: registerDto.fullName,
+      email: registerDto.email,
+      password: registerDto.password,
+    });
+
+    return {
+      message: 'Account registration successful!',
+      user: newUser,
     };
   }
 }

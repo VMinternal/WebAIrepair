@@ -144,10 +144,10 @@ async createAdvancedSymptom(dto: CreateSymptomDto) {
   let filterConditions = '';
 
   if (dto.deviceId) {
-    // Kết nối thêm với bảng devices d (Do bảng issues liên kết trực tiếp với devices)
+    // Connect to the devices table (because the issues table is directly linked to devices).
     deviceJoinClause = `INNER JOIN devices d ON i.device_id = d.id`;
     
-    // Đẩy deviceId vào mảng tham số, vị trí của nó sẽ tương ứng với ký hiệu $3, $4... động
+    // Push deviceId into the parameter array, its position will correspond to the symbol $3, $4...
     queryParams.push(dto.deviceId);
     filterConditions += ` AND d.id = $${queryParams.length}`;
   }try {

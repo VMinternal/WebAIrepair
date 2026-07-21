@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Part } from './part.entity';
+import { Part } from './entities/part.entity';
 
 @Injectable()
 export class PartsService {

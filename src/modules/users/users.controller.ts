@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from 'src/common/enums/role.enum';
 
 @Controller('users')
 export class UsersController {
@@ -15,11 +19,13 @@ export class UsersController {
   }
 
   /**
-   * 🔒 LẤY DANH SÁCH USER (Chỉ Admin mới được phép)
-   * 💡 Mẹo: Sau khi làm xong AuthModule, bạn sẽ thêm @UseGuards(JwtAuthGuard, RolesGuard) ở đây
+   * 🔒 GET USER LIST (Only Admins are allowed)
+   * 
    */
   @Get()
-  async findAll(): Promise<User[]> {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async findAll() {
     return await this.usersService.findAll();
   }
 

@@ -9,7 +9,7 @@ import { UsersModule } from 'src/modules/users/users.module';
 
 @Module({
   imports: [
-    UsersModule, // Đấu nối trực tiếp với Database của Module Users
+    UsersModule, 
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

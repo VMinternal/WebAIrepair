@@ -22,44 +22,44 @@ export class AppointmentsService {
   ) {}
   
   async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
-    console.log('=== DỮ LIỆU DTO NHẬN ĐƯỢC ===', createAppointmentDto);
-  // 1. Lấy tên model thiết bị từ Frontend gửi lên (ví dụ: "iphone 14 pro max")
+    console.log('=== DTO DATA RECEIVED ===', createAppointmentDto);
+  //Get the device model name sent from the frontend (e.g., "iphone 14 pro max")
   const modelName = createAppointmentDto.deviceModel;
   let foundDevice: Device | null = null;
 
   if (modelName) {
     try {
-      // Tìm thiết bị trong DB có model trùng khớp (Không phân biệt hoa thường)
+      // Find the device in the database with a matching model (case-insensitive).
       foundDevice = await this.deviceRepository.findOne({
         where: { model: ILike(`%${modelName.trim()}%`) } 
       });
-      console.log('=== KẾT QUẢ TÌM THIẾT BỊ TRONG DB ===', foundDevice);
-      // Đặt một dòng log ở đây để kiểm tra xem có tìm thấy máy trong DB thật không
-      console.log('--> Kết quả tìm kiếm thiết bị:', foundDevice);
+      console.log('=== DEVICE SEARCH RESULTS IN THE DATABASE ===', foundDevice);
+      // Place a log entry here to check if the machine is actually found in the database.
+      console.log('--> Device search results:', foundDevice);
       
     } catch (dbError) {
-      console.error('Không tìm thấy thiết bị phù hợp dưới DB:', dbError);
+      console.error('No matching device found under DB:', dbError);
       
     }
   }else {
-    // 🔴 3. LOG NẾU BIẾN TÊN MÁY BỊ TRỐNG
-    console.log('⚠️ CẢNH BÁO: deviceModel gửi lên bị rỗng hoặc undefined!');
+    // LOG IN IF MACHINE NAME IS EMPTY
+    console.log('⚠️ WARNING: The deviceModel sent is empty or undefined!');
   }
-  // 2. Đóng gói dữ liệu chuẩn theo thuộc tính Entity của bạn
+  // Encapsulate data according to the Entity attribute.
   const newAppointment = this.appointmentRepository.create({
     customerName: createAppointmentDto.customerName,
     phone: createAppointmentDto.phone,
     
-    // ✨ THAY ĐỔI QUAN TRỌNG Ở ĐÂY:
-    // Gán trực tiếp thực thể 'foundDevice' vào thuộc tính 'device' (quan hệ ManyToOne)
-    // Nếu không tìm thấy bằng tên modelName, thử fallback về đối tượng chứa deviceId từ DTO
+  
+    // Assign the 'foundDevice' entity directly to the 'device' property (ManyToOne relationship).
+    //If not found by modelName, try fallingback to the object containing deviceId from the DTO.
     device: foundDevice ? foundDevice : (createAppointmentDto.deviceId ? { id: createAppointmentDto.deviceId } : undefined), 
     
     issueId: createAppointmentDto.issueId,
     issueDescription: createAppointmentDto.issueDescription,
     totalPrice: createAppointmentDto.totalPrice || 0,
     
-    // Nếu Frontend không gửi ngày lên, tự động lấy ngày giờ hiện tại của hệ thống
+    // If the frontend doesn't send the date, it will automatically use the current system date and time.
     appointmentDate: createAppointmentDto.appointmentDate 
       ? new Date(createAppointmentDto.appointmentDate) 
       : new Date(),
@@ -67,15 +67,15 @@ export class AppointmentsService {
     status: 'pending', 
   });
 
-  // 3. Tiến hành lưu xuống Database với try-catch phòng thủ chặt chẽ
+  // Proceed with saving to the database using a strong try-catch defense strategy.
   try {
     return await this.appointmentRepository.save(newAppointment);
   } catch (error) {
     console.error('Error creating a detailed appointment:', error);
     if ((error as any).code === '23503') {
-      throw new BadRequestException('Mã thiết bị hoặc mã lỗi AI gửi lên không tồn tại trong hệ thống.');
+      throw new BadRequestException('The device or error code that sent the AI ​​does not exist in the system.');
     }
-    throw new BadRequestException('Hệ thống bận, không thể xử lý đặt lịch lúc này. Vui lòng thử lại sau.');
+    throw new BadRequestException('The system is busy and cannot process your booking at this time. Please try again later.');
   }
 }
 
@@ -95,7 +95,7 @@ export class AppointmentsService {
     },
   });
   if (!appointments || appointments.length === 0) {
-    throw new NotFoundException(`Không tìm thấy lịch hẹn nào cho số điện thoại: ${phone}`);
+    throw new NotFoundException(`No appointments were found for this phone number: ${phone}`);
   }
 
   return appointments;

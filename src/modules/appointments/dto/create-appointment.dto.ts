@@ -19,17 +19,17 @@ export class CreateAppointmentDto {
 
   @IsUUID()
   @IsOptional()
-  issueId?: string; // Mã lỗi AI quét ra (nếu có)
+  issueId?: string; 
 
   @IsString()
   @IsOptional()
-  issueDescription?: string; // Triệu chứng/Mô tả khách nhập
+  issueDescription?: string; 
 
   @IsNumber()
   @IsOptional()
-  totalPrice?: number; // Tổng số tiền chốt từ AI và linh kiện
+  totalPrice?: number; 
 
   @IsDateString()
   @IsOptional()
-  appointmentDate?: string; // Ngày hẹn (ví dụ: "2026-07-15T14:30:00Z")
+  appointmentDate?: string; 
 }

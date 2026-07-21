@@ -9,6 +9,6 @@ export class Tag {
   @Column({ type: 'varchar', length: 50, unique: true })
   name: string;
 
-  @ManyToMany(() => Post, (post) => post.tags) // Kết nối ngược lại với bài viết
+  @ManyToMany(() => Post, (post) => post.tags) 
   posts: Post[];
 }
